@@ -1,0 +1,16 @@
+{
+  "name": "egeesappel",
+  "version": "1.0.0",
+  "description": "This is egee sappel plugin for water and heath read information",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "e-GEE",
+    "egee",
+    "sappel"
+  ],
+  "author": "Guy Lagueu",
+  "license": "ISC"
+}

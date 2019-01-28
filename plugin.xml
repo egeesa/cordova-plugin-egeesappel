@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<plugin id="cordova.plugin.egeesappel" version="1.0.0"
+<plugin id="cordova.plugin.egeesappel" version="1.0.1"
     xmlns="http://apache.org/cordova/ns/plugins/1.0">
 
     <name>EgeeSappel</name>
@@ -27,7 +27,7 @@
             </feature>
         </config-file>
 
-        <source-file src="src/android/egeesappel.java" target-dir="src/cordova/plugin/egeesappel" />
+        <source-file src="src/android/EgeeSappel.java" target-dir="src/cordova/plugin/egeesappel" />
         <source-file src="src/android/libs/izar-library.2.3.1-android.jar" target-dir="app/src/main/libs/" framework="true"/>
 
          <js-module name="EgeeSappel" src="www/EgeeSappel.js">

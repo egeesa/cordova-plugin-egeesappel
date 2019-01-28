@@ -19,11 +19,14 @@ import org.json.JSONObject;
 
 // DIEHL imports
 import com.diehl.metering.izar.license.api.LicenseService;
+import com.diehl.metering.izar.module.readout.text.impl.RadioInterpret;
 
 public class EgeeSappel extends CordovaPlugin {
     private static final String TAG = "EgeeSappel";
 
     public static final String ACTION_GET_LICENCE = "getLicence";
+    public static final String ACTION_RADIO_INTERPRET = "radioInterpret";
+    public static final String ACTION_RADIO_INTERPRET_HEAD = "radioInterpretHead";
 
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
@@ -37,6 +40,16 @@ public class EgeeSappel extends CordovaPlugin {
             if (ACTION_GET_LICENCE.equals(action)) {
                 this.getLicence(callbackContext);
                 return true;
+            } else {
+                if (ACTION_RADIO_INTERPRET.equals(action)) {
+                    this.radioInterpret(args, callbackContext);
+                    return true;
+                } else {
+                    if (ACTION_RADIO_INTERPRET_HEAD.equals(action)) {
+                        this.radioInterpret(args, callbackContext);
+                        return true;
+                    }
+                }
             }
             callbackContext.error("Invalid Action");
             return false;
@@ -55,6 +68,38 @@ public class EgeeSappel extends CordovaPlugin {
 
         } catch (Exception ex) {
             callback.error("No license: " + ex);
+        }
+    }
+
+    private void radioInterpret(JSonArray args, CallbackContext callback) {
+        if (args != null) {
+            try {
+                String frame = args.getJSONObject(0).getString("param");
+                String result = RadioInterpret.INSTANCE.interpret(frame);
+
+                callback.success("" + (result));
+
+            } catch (Exception ex) {
+                callback.error("error: " + ex);
+            }
+        } else {
+            callback.error("Please do not pass null value");
+        }
+    }
+
+    private void radioInterpretHead(JSonArray args, CallbackContext callback) {
+        if (args != null) {
+            try {
+                String frame = args.getJSONObject(0).getString("param");
+                String result = RadioInterpret.INSTANCE.interpretHead(frame);
+
+                callback.success("" + (result));
+
+            } catch (Exception ex) {
+                callback.error("error: " + ex);
+            }
+        } else {
+            callback.error("Please do not pass null value");
         }
     }
 }

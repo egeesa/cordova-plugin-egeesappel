@@ -1,19 +1,43 @@
-var exec = require('cordova/exec');
+cordova.define("cordova.plugin.egeesappel.EgeeSappel", function(require, exports, module) {
+    var exec = require('cordova/exec');
+    
+    module.exports.getVersion = function (success, error) {
+        exec(success, error, 'EgeeSappel', 'getVersion', []);
+    };
 
-var PLUGIN_NAME = 'EgeeSappel';
+    module.exports.readDeviceConfiguration = function (success, error) {
+        exec(success, error, 'EgeeSappel', 'readDeviceConfiguration', []);
+    };
 
-function EgeeSappel() {}
+    module.exports.openConfigurationConnection = function (arg0,success, error) {
+        exec(success, error, 'EgeeSappel', 'openConfigurationConnection', [arg0]);
+    };
 
-EgeeSappel.prototype.getLicence = function (success, error) {
-    exec(success, error, PLUGIN_NAME, 'getLicence', []);
-};
+    module.exports.initializeConfiguration = function (arg0,success, error) {
+        exec(success, error, 'EgeeSappel', 'initializeConfiguration', [arg0]);
+    };
 
-EgeeSappel.prototype.radioInterpret = function (args0,success, error) {
-    exec(success, error, PLUGIN_NAME, 'radioInterpret', [args0]);
-};
+    module.exports.closeConfigConnection = function (success, error) {
+        exec(success, error, 'EgeeSappel', 'closeConfigConnection', []);
+    };
 
-EgeeSappel.prototype.radioInterpretHead = function (args0,success, error) {
-    exec(success, error, PLUGIN_NAME, 'radioInterpretHead', [args0]);
-};
+    module.exports.setDeviceConfiguration = function (arg0,success, error) {
+        exec(success, error, 'EgeeSappel', 'setDeviceConfiguration', [arg0]);
+    };
 
-module.exports = new EgeeSappel();
+    module.exports.read = function (arg0, success, error) {
+        exec(success, error, 'EgeeSappel', 'read', [arg0]);
+    };
+
+    module.exports.openConnection = function (arg0, success, error) {
+        exec(success, error, 'EgeeSappel', 'openConnection', [arg0]);
+    };
+
+    module.exports.pollFrames = function (success, error) {
+        exec(success, error, 'EgeeSappel', 'pollFrames', []);
+    };
+
+    module.exports.closeConnection = function (success, error) {
+        exec(success, error, 'EgeeSappel', 'closeConnection', []);
+    };
+});

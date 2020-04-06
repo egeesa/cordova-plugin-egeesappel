@@ -1,7 +1,7 @@
 {
   "name": "egeesappel",
   "version": "1.0.0",
-  "description": "This is egee sappel plugin for water and heath read information",
+  "description": "This is egee sappel plugin for water and heath devices informations",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

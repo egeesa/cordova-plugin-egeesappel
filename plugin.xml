@@ -1,24 +1,22 @@
 <?xml version='1.0' encoding='utf-8'?>
-<plugin id="cordova.plugin.egeesappel" version="1.0.1"
+<plugin id="cordova.plugin.egeesappel" version="1.0.0"
     xmlns="http://apache.org/cordova/ns/plugins/1.0">
 
     <name>EgeeSappel</name>
     <description>Plugin e-GEE de lecture et programmation des modules SAPPEL</description>
     <license>e-GEE S.A.S</license>
     <keywords>egee, sappel, plugin, cordova</keywords>
-    
-    <engines>
-        <engine name="cordova-android" version=">=6.0.0" />
-    </engines>
 
     <!-- android -->
 
     <platform name="android">
 
-        <config-file target="AndroidManifest.xml" parent="/*">
-            <uses-permission android:name="android.permission.BLUETOOTH" />
-            <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-        </config-file>
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+          <uses-permission android:name="android.permission.BLUETOOTH" />
+          <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+          <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+          <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+      </config-file>
 
         <config-file parent="/*" target="res/xml/config.xml">
             <feature name="EgeeSappel">
@@ -40,13 +38,6 @@
             <clobbers target="EgeeSappel" />
         </js-module>
 
-    </platform>
-
-    <!-- windows universal apps (Windows 8.1, Windows Phone 8.1, Windows 8.0) -->
-    <platform name="windows">
-        <js-module name="EgeeSappel" src="src/windows/EgeeSappel.js">
-            <runs target="" />
-        </js-module>
     </platform>
 
 </plugin>

@@ -1,11 +1,15 @@
 <?xml version='1.0' encoding='utf-8'?>
-<plugin id="cordova.plugin.egeesappel" version="1.0.0"
+<plugin id="cordova.plugin.egeesappel" version="1.0.0" xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns="http://apache.org/cordova/ns/plugins/1.0">
 
     <name>EgeeSappel</name>
     <description>Plugin e-GEE de lecture et programmation des modules SAPPEL</description>
     <license>e-GEE S.A.S</license>
     <keywords>egee, sappel, plugin, cordova</keywords>
+
+    <js-module name="EgeeSappel" src="www/EgeeSappel.js">
+        <clobbers target="EgeeSappel" />
+    </js-module>
 
     <!-- android -->
 
@@ -21,22 +25,11 @@
         <config-file parent="/*" target="res/xml/config.xml">
             <feature name="EgeeSappel">
                 <param name="android-package" value="cordova.plugin.egeesappel.EgeeSappel" />
-                <param name="onload" value="true"/>>
             </feature>
         </config-file>
 
-        <source-file src="src/android/EgeeSappel.java" target-dir="src/cordova/plugin/egeesappel" />
-        <source-file src="src/android/libs/izar-library.2.3.1-android.jar" target-dir="app/src/main/libs/" framework="true"/>
-
-         <js-module name="EgeeSappel" src="www/EgeeSappel.js">
-            <runs/>
-            <clobbers target="EgeeSappel" />
-        </js-module>
-
-         <js-module name="EgeeSappel" src="www/EgeeSappel.js">
-            <runs/>
-            <clobbers target="EgeeSappel" />
-        </js-module>
+        <source-file src="src/android/EgeeSappel.java" target-dir="src/cordova/plugin/egeesappel/EgeeSappel" />
+        <source-file src="src/android/libs/izarlibrary_2_3_1_android.jar" target-dir="app/src/main/libs/"/>
 
     </platform>
 

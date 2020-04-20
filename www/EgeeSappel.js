@@ -25,10 +25,6 @@ cordova.define("cordova.plugin.egeesappel.EgeeSappel", function(require, exports
         exec(success, error, 'EgeeSappel', 'setDeviceConfiguration', [arg0]);
     };
 
-    module.exports.read = function (arg0, success, error) {
-        exec(success, error, 'EgeeSappel', 'read', [arg0]);
-    };
-
     module.exports.openConnection = function (arg0, success, error) {
         exec(success, error, 'EgeeSappel', 'openConnection', [arg0]);
     };
@@ -39,5 +35,17 @@ cordova.define("cordova.plugin.egeesappel.EgeeSappel", function(require, exports
 
     module.exports.closeConnection = function (success, error) {
         exec(success, error, 'EgeeSappel', 'closeConnection', []);
+    };
+
+    module.exports.openConnectionStatic = function (arg0, success, error) {
+        exec(success, error, 'EgeeSappel', 'openConnectionStatic', [arg0]);
+    };
+
+    module.exports.pollFrameStatic = function (success, error) {
+        exec(success, error, 'EgeeSappel', 'pollFrameStatic', []);
+    };
+
+    module.exports.closeConnectionStatic = function (success, error) {
+        exec(success, error, 'EgeeSappel', 'closeConnectionStatic', []);
     };
 });

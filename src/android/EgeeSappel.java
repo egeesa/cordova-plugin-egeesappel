@@ -47,7 +47,6 @@ public class EgeeSappel extends CordovaPlugin {
     private static final String lic = "020000167B010401C0000000000004031F202020202020202020202020202020204547454520202020207777772E656765652E667200000000000000009ADEC26B9DCA187F2B26B2679753063115F2A8FA0383BF34EEED47E57349ECD0D1D3F6A0223BD00B73937256F6BBEC20FFEFB56C8FF06778491112DC67C7552D56E10603BFCEC010115BBD04278FB8C5CE71DF49862CC8D64D758891F20A322E48734D270F294C7DD476515115C35C522F4306F74057C2835CFFECAECF3E43FD0713D2B9E0C6529AAFBC899C910D94A8499D80652EC973C030E02F461D70FB4FA81A9EA59D2AF902CD890507DB6639FC5B2F7AA36EEA9277C8EDC479B40294EC3E13C5A24BBAF7E28C8E880344FB37F36B6DE43B181CE4E099DF89BD02FDAF091939CEEDCA8FD0130BCAE18C02F1BB6EDC22D9495D1D0BA1510536B8A48F9570";
 
     private CallbackContext PUBLIC_CALLBACKS = null;
-    private Context mContext;
     private static final String TAG = "EGEESAPPEL";
 
     private static final String ACTION_GET_VERSION = "getVersion";
@@ -60,16 +59,22 @@ public class EgeeSappel extends CordovaPlugin {
     private static final String ACTION_READ_DEVICE_CONFIGURATION = "readDeviceConfiguration";
 
     //Fonctions de lecture
-    private static final String ACTION_READ = "read";
-    private static final String ACTION_OPEN_CONNECTION = "openConnection";
-    private static final String ACTION_POLL_FRAMES = "pollFrames";
-    private static final String ACTION_CLOSE_CONNECTION = "closeConnection";
+    private static final String ACTION_OPENCONNECTION = "openConnection";
+    private static final String ACTION_POLLFRAMES = "pollFrames";
+    private static final String ACTION_CLOSECONNECTION = "closeConnection";
+
+    //Fonctions de lecture static
+    private static final String ACTION_OPENCONNECTION_STATIC = "openConnectionStatic";
+    private static final String ACTION_POLLFRAME_STATIC = "pollFrameStatic";
+    private static final String ACTION_CLOSECONNECTION_STATIC = "closeConnectionStatic";
    
    
 
     private Receiver IZARReceiver;
     private ReceiverStatic IZARReceiverStatic;
     private MeterConfigStatic IZARMeterConfigStatic;
+    private final StringBuilder frames = new StringBuilder();
+    private String connectionInfo = "Connection needs to be started";
    
 
     @Override
@@ -77,7 +82,6 @@ public class EgeeSappel extends CordovaPlugin {
         super.initialize(cordova, webView);
 
         Log.d(TAG, "Initialisation du plugin");
-        mContext = this.cordova.getActivity();
         
     }
 
@@ -87,61 +91,73 @@ public class EgeeSappel extends CordovaPlugin {
         PUBLIC_CALLBACKS = callbackContext;
 
         if (ACTION_GET_VERSION.equals(action)) {
-            cordova.getThreadPool().execute(new Runnable() {
+            cordova.getActivity().runOnUiThread(new Runnable() {
                 public void run() {
                     getVersion();
                 }
             });
-        } else  if (ACTION_READ.equals(action)) {
-            cordova.getThreadPool().execute(new Runnable() {
-                public void run() {
-                    read(args,callbackContext);
-                }
-            });
-        } else if (ACTION_OPEN_CONNECTION.equals(action)) {
-            cordova.getThreadPool().execute(new Runnable() {
+        } else  if (ACTION_OPENCONNECTION.equals(action)) {
+            cordova.getActivity().runOnUiThread(new Runnable() {
                 public void run() {
                     openConnection(args,callbackContext);
                 }
             });
-        } else if (ACTION_POLL_FRAMES.equals(action)) {
-            cordova.getThreadPool().execute(new Runnable() {
+        } else if (ACTION_POLLFRAMES.equals(action)) {
+            cordova.getActivity().runOnUiThread(new Runnable() {
                 public void run() {
                     pollFrames(callbackContext);
                 }
             });
-        } else if (ACTION_CLOSE_CONNECTION.equals(action)) {
-            cordova.getThreadPool().execute(new Runnable() {
+        } else if (ACTION_CLOSECONNECTION.equals(action)) {
+            cordova.getActivity().runOnUiThread(new Runnable() {
                 public void run() {
                     closeConnection(callbackContext);
                 }
             });
+        } else if (ACTION_OPENCONNECTION_STATIC.equals(action)) {
+            cordova.getActivity().runOnUiThread(new Runnable() {
+                public void run() {
+                    openConnectionStatic(args,callbackContext);
+                }
+            });
+        } else if (ACTION_POLLFRAME_STATIC.equals(action)) {
+            cordova.getActivity().runOnUiThread(new Runnable() {
+                public void run() {
+                    pollFrameStatic(callbackContext);
+                }
+            });
+        } else if (ACTION_CLOSECONNECTION_STATIC.equals(action)) {
+            cordova.getActivity().runOnUiThread(new Runnable() {
+                public void run() {
+                    closeConnectionStatic(callbackContext);
+                }
+            });
         } else if (ACTION_OPEN_CONFIG_CONNECTION.equals(action)) {
-            cordova.getThreadPool().execute(new Runnable() {
+            cordova.getActivity().runOnUiThread(new Runnable() {
                 public void run() {
                     openConfigurationConnection(args,callbackContext);
                 }
             });
         } else if (ACTION_INITIALIZE_CONFIGURATION.equals(action)) {
-            cordova.getThreadPool().execute(new Runnable() {
+            cordova.getActivity().runOnUiThread(new Runnable() {
                 public void run() {
                     initializeConfiguration(args,callbackContext);
                 }
             });
         } else if (ACTION_SET_CONFIGURATION.equals(action)) {
-            cordova.getThreadPool().execute(new Runnable() {
+            cordova.getActivity().runOnUiThread(new Runnable() {
                 public void run() {
                     setDeviceConfiguration(args,callbackContext);
                 }
             });
         } else if (ACTION_READ_DEVICE_CONFIGURATION.equals(action)) {
-            cordova.getThreadPool().execute(new Runnable() {
+            cordova.getActivity().runOnUiThread(new Runnable() {
                 public void run() {
                     readDeviceConfiguration(callbackContext);
                 }
             });
         } else if (ACTION_CLOSE_CONFIG_CONNECTION.equals(action)) {
-            cordova.getThreadPool().execute(new Runnable() {
+            cordova.getActivity().runOnUiThread(new Runnable() {
                 public void run() {
                     closeConfigConnection(callbackContext);
                 }
@@ -159,13 +175,17 @@ public class EgeeSappel extends CordovaPlugin {
 
     //  transfert des messages vers javascript
     public void transmitToJs(JSONObject message) {
-        if (PUBLIC_CALLBACKS == null) {
-            return;
+        try {
+            if (PUBLIC_CALLBACKS == null) {
+                return;
+            }
+            Log.d(TAG, "RETOUR: " + message);
+            PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, message);
+            pluginResult.setKeepCallback(true);
+            PUBLIC_CALLBACKS.sendPluginResult(pluginResult);
+        } catch (Exception e) {
+            Log.e(TAG, "transmitToJs: "+ e.toString());
         }
-        Log.d(TAG, "RETOUR: " + message);
-        PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, message);
-        pluginResult.setKeepCallback(true);
-        PUBLIC_CALLBACKS.sendPluginResult(pluginResult);
     }
    
     /**
@@ -400,7 +420,7 @@ public class EgeeSappel extends CordovaPlugin {
      * @param callbackContext A Cordova callback context
      * @return un objet message qui contient le status de la connexion.
      */
-    private void openConnection(JSONArray args, CallbackContext callback) {
+    private void openConnectionStatic(JSONArray args, CallbackContext callback) {
         if (args != null) {
             try {
                
@@ -433,7 +453,7 @@ public class EgeeSappel extends CordovaPlugin {
                 }
 
             } catch (JSONException jsonEx) {
-                Log.e(TAG, "openConnection JSONException: " + jsonEx.toString());
+                Log.e(TAG, "openConnectionStatic JSONException: " + jsonEx.toString());
                 callback.error("Erreur openConnection: " + jsonEx.toString());
             } catch (Exception exc) {
                 Log.e(TAG, "openConnection: " + exc.toString());
@@ -445,12 +465,11 @@ public class EgeeSappel extends CordovaPlugin {
     }
     
     /**
-     * Cette fonction permet d'initialiser la connexion Bluetooth au PRT 
-     * @param param  args tableau des paramétre contenant 'macAddress' et sa valeur
+     * Cette fonction permet de récuperer la liste des télégrammes  
      * @param callbackContext A Cordova callback context
-     * @return true si OK ou false si KO.
+     * @return un tableau d'object télégrammes ou un object message.
      */
-    private void pollFrames(CallbackContext callback) {
+    private void pollFrameStatic(CallbackContext callback) {
 
         try {
         
@@ -462,9 +481,9 @@ public class EgeeSappel extends CordovaPlugin {
                
                 String connectionInfo = this.IZARReceiverStatic.getStatus();
                 if ("Connection enabled".equals(connectionInfo)) {
-                    String frames = this.IZARReceiverStatic.pollFrames();
-                    if (frames != null && frames != "") {
-                        List<String> mesFrames = this.getFrames(frames);
+                    String mframes = this.IZARReceiverStatic.pollFrames();
+                    if (mframes != null && mframes != "") {
+                        List<String> mesFrames = this.getFrames(mframes);
                         JSONArray arrayJSON = new JSONArray();
                         //Interprétation des frames reçues.
                         for (String fr : mesFrames) {
@@ -487,11 +506,11 @@ public class EgeeSappel extends CordovaPlugin {
             }
 
         } catch (JSONException jsonEx) {
-            Log.e(TAG, "pollFrames JSONException: " + jsonEx.toString());
-            callback.error("Erreur pollFrames: " + jsonEx.toString());
+            Log.e(TAG, "pollFrameStatic JSONException: " + jsonEx.toString());
+            callback.error("Erreur pollFrameStatic: " + jsonEx.toString());
         } catch (Exception exc) {
-            Log.e(TAG, "pollFrames: " + exc.toString());
-            callback.error("Erreur pollFrames: " + exc.toString());
+            Log.e(TAG, "pollFrameStatic: " + exc.toString());
+            callback.error("Erreur pollFrameStatic: " + exc.toString());
         }
        
     }
@@ -502,7 +521,7 @@ public class EgeeSappel extends CordovaPlugin {
      * @param callbackContext A Cordova callback context
      * @return true si OK ou false si KO.
      */
-    private void closeConnection(CallbackContext callback) {
+    private void closeConnectionStatic(CallbackContext callback) {
         try {
             String connectionInfo = this.IZARReceiverStatic.getStatus();
             if ("Connection enabled".equals(connectionInfo)) {
@@ -517,11 +536,11 @@ public class EgeeSappel extends CordovaPlugin {
             }
 
        } catch (JSONException jsonEx) {
-            Log.e(TAG, "closeConnection JSONException: "+ jsonEx.toString());
-            callback.error("Erreur closeConnection: " + jsonEx.toString()); 
+            Log.e(TAG, "closeConnectionStatic JSONException: "+ jsonEx.toString());
+            callback.error("Erreur closeConnectionStatic: " + jsonEx.toString()); 
         } catch (Exception exc) {
-            Log.e(TAG, "closeConnection: " + exc.toString());
-            callback.error("Erreur closeConnection: " + exc.toString());
+            Log.e(TAG, "closeConnectionStatic: " + exc.toString());
+            callback.error("Erreur closeConnectionStatic: " + exc.toString());
         } 
     }
 
@@ -532,7 +551,7 @@ public class EgeeSappel extends CordovaPlugin {
      * @param callbackContext A Cordova callback context
      * @return true if frame interpretation success, fail will be called if not.
      */
-     private void read(JSONArray args, CallbackContext callback) {
+     private void openConnection(JSONArray args, CallbackContext callback) {
          if (args != null) {
 
              try {
@@ -551,8 +570,21 @@ public class EgeeSappel extends CordovaPlugin {
                     msgLicence.put("message", "Licence de la librairie invalide");
                     transmitToJs(msgLicence);
                 } else {
-                    if (IZARReceiver != null) {
-                        this.IZARReceiver = Receiver.start(param1, IZARReceiverCallback);
+                    if (IZARReceiver == null) {
+                       
+                        IZARReceiver = Receiver.start(param1, IZARReceiverCallback);
+
+                        if (IZARReceiver != null) {
+                            String myConnectionInfo = getStatus();
+                            JSONObject msg = new JSONObject();
+                            msg.put("message", myConnectionInfo);
+                            transmitToJs(msg);
+                        }
+                    } else {
+                        String myConnectionInfo = getStatus();
+                        JSONObject msg = new JSONObject();
+                        msg.put("message", myConnectionInfo);
+                        transmitToJs(msg);
                     }
                  } 
                 
@@ -571,21 +603,26 @@ public class EgeeSappel extends CordovaPlugin {
      {
         @Override
          public final  void onFrame(String deviceUid, String frame) {
-             try {
-                 Log.d("RECEIVER", "device: "+deviceUid+" frame: "+frame);
+            // try {
+                 Log.d("RECEIVER", "device: " + deviceUid + " frame: " + frame);
+                 
+                 synchronized (frames) {
+                    frames.append(deviceUid).append('\t').append(frame).append('\n');
+                    return;
+                  }
 
                  // interpretation d'une frame reçu
-                 if (deviceUid != "" && frame != "") {
+                //  if (deviceUid != "" && frame != "") {
 
-                     String resultInterpret = RadioInterpret.INSTANCE.interpret(frame);
+                //      String resultInterpret = RadioInterpret.INSTANCE.interpret(frame);
 
-                     JSONObject msg = formatResponse(resultInterpret.replace("VOLUME[1]", "VOLUME_1").replace("TIMEPOINT[1]", "TIMEPOINT_1"));
-                     transmitToJs(msg);
-                 }
+                //      JSONObject msg = formatResponse(resultInterpret.replace("VOLUME[1]", "VOLUME_1").replace("TIMEPOINT[1]", "TIMEPOINT_1"));
+                //      transmitToJs(msg);
+                //  }
                 
-             } catch (JSONException exjson) {
-                 Log.e("RECEIVER", "JSON Exception caught: "+exjson);
-             }
+            //  } catch (JSONException exjson) {
+            //      Log.e("RECEIVER", "JSON Exception caught: "+exjson);
+            //  }
             
          }
        
@@ -593,6 +630,115 @@ public class EgeeSappel extends CordovaPlugin {
        public final  void onError(Exception paramAnonymousException) {}
        public final  void onConnectionClosed() {}
    };
+
+   private String pollFrame()
+   {
+       String str;
+       synchronized (frames) {
+           str = frames.toString();
+           frames.setLength(0);
+       }
+       return str;
+   }
+
+   private String getStatus()
+    {
+        if (IZARReceiver == null) {
+            if (connectionInfo == null) {
+                connectionInfo = "Connection needs to be started";
+            }
+        }
+        else if (frames.length() == 0) {
+            connectionInfo = "The receiver is not enabled";
+        } else {
+            connectionInfo = "Connection enabled";
+        }
+        
+        return connectionInfo;
+    }
+    
+   /**
+     * Cette fonction permet de récuperer la liste des télégrammes  
+     * @param callbackContext A Cordova callback context
+     * @return un tableau d'object télégrammes ou un object message.
+     */
+   private void pollFrames(CallbackContext callback) {
+
+       try {
+
+           if (!isLicenseValid()) {
+               JSONObject msgLicence = new JSONObject();
+               msgLicence.put("message", "Licence de la librairie invalide");
+               transmitToJs(msgLicence);
+           } else {
+
+               String myConnectionInfo = getStatus();
+               if ("Connection enabled".equals(myConnectionInfo)) {
+                   String mframes = pollFrame();
+                   if (mframes != null && mframes != "") {
+                       List<String> mesFrames = this.getFrames(mframes);
+                       JSONArray arrayJSON = new JSONArray();
+                       //Interprétation des frames reçues.
+                       for (String fr : mesFrames) {
+
+                           String frameInterpret = RadioInterpret.INSTANCE.interpret(fr);
+                           JSONObject msgFormat = formatResponse(frameInterpret.replace("VOLUME[1]", "VOLUME_1")
+                                   .replace("TIMEPOINT[1]", "TIMEPOINT_1"));
+                           arrayJSON.put(msgFormat);
+                       }
+
+                       JSONObject msgRetour = new JSONObject();
+                       msgRetour.put("telegrams", arrayJSON);
+                       transmitToJs(msgRetour);
+                   }
+
+               } else {
+                   JSONObject msg = new JSONObject();
+                   msg.put("message", myConnectionInfo);
+                   transmitToJs(msg);
+               }
+           }
+
+       } catch (JSONException jsonEx) {
+           Log.e(TAG, "pollFrames JSONException: " + jsonEx.toString());
+           callback.error("Erreur pollFrames: " + jsonEx.toString());
+       } catch (Exception exc) {
+           Log.e(TAG, "pollFrames: " + exc.toString());
+           callback.error("Erreur pollFrames: " + exc.toString());
+       }
+
+   }
+    
+    /**
+     * Cette fonction permet de fermer la connexion Bluetooth au PRT 
+     *
+     * @param callbackContext A Cordova callback context
+     * @return true si OK ou false si KO.
+     */
+    private void closeConnection(CallbackContext callback) {
+        try {
+           
+            if (IZARReceiver != null) {
+                IZARReceiver.stop();
+                IZARReceiver = null;
+                connectionInfo = null;
+                JSONObject msgClose = new JSONObject();
+                msgClose.put("message", "Connexion au PRT fermée");
+                transmitToJs(msgClose);
+            } else {
+                JSONObject msg = new JSONObject();
+                msg.put("message", "Aucune connexion active");
+                transmitToJs(msg);
+            }
+
+       } catch (JSONException jsonEx) {
+            Log.e(TAG, "closeConnection JSONException: "+ jsonEx.toString());
+            callback.error("Erreur closeConnection: " + jsonEx.toString()); 
+        } catch (Exception exc) {
+            Log.e(TAG, "closeConnection: " + exc.toString());
+            callback.error("Erreur closeConnection: " + exc.toString());
+        } 
+    }
 
    /**
      * Cette fonction permet d'extraire le frame à interpreter de la chaîne deviceUid +'\t'+frame+'\n'
@@ -605,16 +751,16 @@ public class EgeeSappel extends CordovaPlugin {
      
            if (chaineFrame != null && chaineFrame != "") {
 
-                List<String> frames = new ArrayList<String>();
+                List<String> myframes = new ArrayList<String>();
 
                 String[] lines = chaineFrame.split("\\s*\\r?\\n\\s*");
                
                for (String line : lines) {
-                   frames.add(line.replaceAll("\t", " "));
+                   myframes.add(line.replaceAll("\t", " "));
                }
                
-               for (int i = 0; i < frames.size(); i++) {
-                   String[] lignes = frames.get(i).split(" ", 2);
+               for (int i = 0; i < myframes.size(); i++) {
+                   String[] lignes = myframes.get(i).split(" ", 2);
                    frame.add(lignes[1]);
                }
 
@@ -633,14 +779,14 @@ public class EgeeSappel extends CordovaPlugin {
       
            if (result != null && result != "") {
 
-               ArrayList<String> frames = new ArrayList<String>();
+               ArrayList<String> myframes = new ArrayList<String>();
 
                String[] lines = result.split("\\s*\\r?\\n\\s*");
                for (String line : lines) {
-                   frames.add(line.replaceAll("\t", " "));
+                   myframes.add(line.replaceAll("\t", " "));
                }
               
-               for (String fr : frames) {
+               for (String fr : myframes) {
                    String[] lignes = fr.split(" ", 2);
                    msg.put(lignes[0], lignes[1]);
                }
@@ -650,6 +796,4 @@ public class EgeeSappel extends CordovaPlugin {
   
    }
    
-
-
 }

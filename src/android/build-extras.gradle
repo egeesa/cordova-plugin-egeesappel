@@ -1,0 +1,11 @@
+
+android {
+    defaultConfig {
+        multiDexEnabled true
+        javaCompileOptions {
+            annotationProcessorOptions {
+                includeCompileClasspath true
+            }
+        }
+    }
+}

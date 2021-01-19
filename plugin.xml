@@ -30,7 +30,7 @@
         </config-file>
 
         <source-file src="src/android/EgeeSappel.java" target-dir="src/cordova/plugin/egeesappel/EgeeSappel" />
-        <source-file src="src/android/libs/izarlibrary_2_3_1_android.jar" target-dir="app/libs/"/>
+        <source-file src="src/android/libs/izar-library.i-c-3.3.10-android.jar" target-dir="app/libs/"/>
 
     </platform>
 

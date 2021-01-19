@@ -573,14 +573,19 @@ public class EgeeSappel extends CordovaPlugin {
                     if (IZARReceiver == null) {
                        
                         IZARReceiver = Receiver.start(param1, IZARReceiverCallback);
-
+                        Log.d("RECEIVER","Receiver.start connectionInfo"+ connectionInfo);
                         if (IZARReceiver != null) {
+                            Log.d("RECEIVER","IZARReceiver != null");
                             String myConnectionInfo = getStatus();
+                            Log.d("RECEIVER","getStatus myConnectionInfo"+ myConnectionInfo);
                             JSONObject msg = new JSONObject();
                             msg.put("message", myConnectionInfo);
                             transmitToJs(msg);
+                        } else {
+                            Log.d("RECEIVER","IZARReceiver == null");
                         }
                     } else {
+                        Log.d("RECEIVER","Recuperation connectionInfo"+ connectionInfo);
                         String myConnectionInfo = getStatus();
                         JSONObject msg = new JSONObject();
                         msg.put("message", myConnectionInfo);
@@ -626,9 +631,12 @@ public class EgeeSappel extends CordovaPlugin {
             
          }
        
-       public final  void onKeepAlive() {}
-       public final  void onError(Exception paramAnonymousException) {}
-       public final  void onConnectionClosed() {}
+         @Override public final void onKeepAlive() {
+            Log.d("RECEIVER","Connection alive, but no telegramsavailable");
+           connectionInfo = "Connection enabled"; 
+        } 
+        @Override public final void onError(Exception e) { Log.d("RECEIVER","An error occured") ; } 
+        @Override public final void onConnectionClosed() { Log.d("RECEIVER","Disconnection") ; }
    };
 
    private String pollFrame()
@@ -643,16 +651,17 @@ public class EgeeSappel extends CordovaPlugin {
 
    private String getStatus()
     {
+        Log.d("SAPPEL getStatus","connectionInfo " + connectionInfo);
         if (IZARReceiver == null) {
             if (connectionInfo == null) {
                 connectionInfo = "Connection needs to be started";
             }
         }
-        else if (frames.length() == 0) {
+        /*else if (frames.length() == 0) {
             connectionInfo = "The receiver is not enabled";
         } else {
             connectionInfo = "Connection enabled";
-        }
+        }*/
         
         return connectionInfo;
     }

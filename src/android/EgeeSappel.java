@@ -51,38 +51,42 @@ public class EgeeSappel extends CordovaPlugin {
 
     private static final String ACTION_GET_VERSION = "getVersion";
 
-    //Fonstions de programmations
-    private static final String ACTION_OPEN_CONFIG_CONNECTION = "openConfigurationConnection";
-    private static final String ACTION_INITIALIZE_CONFIGURATION = "initializeConfiguration";
-    private static final String ACTION_CLOSE_CONFIG_CONNECTION = "closeConfigConnection";
-    private static final String ACTION_SET_CONFIGURATION = "setDeviceConfiguration";
-    private static final String ACTION_READ_DEVICE_CONFIGURATION = "readDeviceConfiguration";
-
     //Fonctions de lecture
     private static final String ACTION_OPENCONNECTION = "openConnection";
     private static final String ACTION_POLLFRAMES = "pollFrames";
     private static final String ACTION_CLOSECONNECTION = "closeConnection";
 
-    //Fonctions de lecture static
+    //Fonctions de programmations
+    private static final String ACTION_OPEN_CONFIG_CONNECTION = "openConfigurationConnection";
+    private static final String ACTION_INITIALIZE_CONFIGURATION = "initializeConfiguration";
+    private static final String ACTION_CLOSE_CONFIG_CONNECTION = "closeConfigConnection";
+    private static final String ACTION_SET_CONFIGURATION = "setDeviceConfiguration";
+    private static final String ACTION_READ_DEVICE_CONFIGURATION = "readDeviceConfiguration";
+    
+
+    //Fonctions de lecture static (pas appelées)
     private static final String ACTION_OPENCONNECTION_STATIC = "openConnectionStatic";
     private static final String ACTION_POLLFRAME_STATIC = "pollFrameStatic";
     private static final String ACTION_CLOSECONNECTION_STATIC = "closeConnectionStatic";
    
-   
+   //Fonctions de programmations static (pas appelées)
+   private static final String ACTION_OPEN_CONFIG_CONNECTION_STATIC = "openConfigurationConnectionStatic";
+   private static final String ACTION_INITIALIZE_CONFIGURATION_STATIC = "initializeConfigurationStatic";
+
 
     private Receiver IZARReceiver;
     private ReceiverStatic IZARReceiverStatic;
+    
+    private MeterConfig IZARMeterConfig;
     private MeterConfigStatic IZARMeterConfigStatic;
-    private final StringBuilder frames = new StringBuilder();
+    private StringBuilder frames = new StringBuilder();
     private String connectionInfo = "Connection needs to be started";
    
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
-
         Log.d(TAG, "Initialisation du plugin");
-        
     }
 
     @Override
@@ -114,7 +118,7 @@ public class EgeeSappel extends CordovaPlugin {
                     closeConnection(callbackContext);
                 }
             });
-        } else if (ACTION_OPENCONNECTION_STATIC.equals(action)) {
+        }/* else if (ACTION_OPENCONNECTION_STATIC.equals(action)) {
             cordova.getActivity().runOnUiThread(new Runnable() {
                 public void run() {
                     openConnectionStatic(args,callbackContext);
@@ -131,8 +135,8 @@ public class EgeeSappel extends CordovaPlugin {
                 public void run() {
                     closeConnectionStatic(callbackContext);
                 }
-            });
-        } else if (ACTION_OPEN_CONFIG_CONNECTION.equals(action)) {
+            });*/
+        else if (ACTION_OPEN_CONFIG_CONNECTION.equals(action)) {
             cordova.getActivity().runOnUiThread(new Runnable() {
                 public void run() {
                     openConfigurationConnection(args,callbackContext);
@@ -165,8 +169,6 @@ public class EgeeSappel extends CordovaPlugin {
         } else {
             return false;
         }
-
-       
 
         PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
         pluginResult.setKeepCallback(true);
@@ -219,31 +221,235 @@ public class EgeeSappel extends CordovaPlugin {
             Log.d(TAG, "Erreur validation licence : " + e.toString());
             return false;
         }
-
     }
+
+    //region "Lecture"
+
+     /**
+     * Cette fonction permet de lire et interpreter les telegrammes
+     * 
+     * @param param           adresse mac PRT
+     * @param callbackContext A Cordova callback context
+     * @return true if frame interpretation success, fail will be called if not.
+     */
+     private void openConnection(JSONArray args, CallbackContext callback) {
+         if (args != null) {
+             try {
+
+                 JSONObject params = args.getJSONObject(0);
+                 String macAddress = params.getString("macAddress");
+
+                 if (macAddress == null || macAddress == "") {
+                     JSONObject msgParam = new JSONObject();
+                     msgParam.put("message", "L'adresse MAC du PRT ne peut pas être null.");
+                     transmitToJs(msgParam);
+                 }
+
+                 if (!isLicenseValid()) {
+                    JSONObject msgLicence = new JSONObject();
+                    msgLicence.put("message", "Licence de la librairie invalide");
+                    transmitToJs(msgLicence);
+                } else {
+                    if (IZARReceiver == null) {
+                        IZARReceiver = Receiver.start(macAddress, IZARReceiverCallback);
+                        if (IZARReceiver != null) {
+                            Log.d("RECEIVER","Receiver.start OK");
+                            connectionInfo = "Connection enabled";
+                            JSONObject msg = new JSONObject();
+                            msg.put("message", connectionInfo);
+                            transmitToJs(msg);
+                        } else {
+                            Log.e("RECEIVER","Receiver.start KO, IZARReceiver == null, la connexion n'a pas pu être établie.");
+                        }
+                    } else {
+                        Log.d("RECEIVER","Récupération connection"+ connectionInfo);
+                        connectionInfo = "Connection enabled";
+                        JSONObject msg = new JSONObject();
+                        msg.put("message", connectionInfo);
+                        transmitToJs(msg);
+                    }
+                 } 
+             } catch (JSONException jsonEx) {
+                callback.error("Erreur read JSONException: " + jsonEx.toString());
+             } catch (Exception ex) {
+                 callback.error("Erreur read:"+ex.getMessage());
+             }
+         } else {
+             callback.error("La liste des paramétres est vide");
+         }
+     }
+    
+     private IReceiverCallback IZARReceiverCallback = new IReceiverCallback()
+     {
+        @Override
+         public void onFrame(String deviceUid, String frame) {
+            // try {
+                 Log.d("RECEIVERCALLBACK", "device: " + deviceUid + " frame: " + frame);
+                 
+                 synchronized (frames) {
+                    frames.append(deviceUid).append('\t').append(frame).append('\n');
+                    return;
+                  }
+                 // interpretation d'une frame reçu
+                //  if (deviceUid != "" && frame != "") {
+
+                //      String resultInterpret = RadioInterpret.INSTANCE.interpret(frame);
+
+                //      JSONObject msg = formatResponse(resultInterpret.replace("VOLUME[1]", "VOLUME_1").replace("TIMEPOINT[1]", "TIMEPOINT_1"));
+                //      transmitToJs(msg);
+                //  }
+                
+            //  } catch (JSONException exjson) {
+            //      Log.e("RECEIVER", "JSON Exception caught: "+exjson);
+            //  }
+         }
+       
+         @Override public void onKeepAlive() {
+            Log.d("RECEIVERCALLBACK","Connection alive, but no telegramsavailable");
+           connectionInfo = "Connection enabled"; 
+        } 
+        @Override public void onError(Exception e) { Log.d("RECEIVERCALLBACK","An error occured") ; connectionInfo="";} 
+        @Override public void onConnectionClosed() { Log.d("RECEIVERCALLBACK","Disconnection") ; connectionInfo="Connection closed";}
+   };
+
+   private String pollFrame()
+   {
+       String str;
+       synchronized (frames) {
+           str = frames.toString();
+           frames.setLength(0);
+       }
+       return str;
+   }
+    
+   /**
+     * Cette fonction permet de récuperer la liste des télégrammes  
+     * @param callbackContext A Cordova callback context
+     * @return un tableau d'object télégrammes ou un object message.
+     */
+   private void pollFrames(CallbackContext callback) {
+       try {
+           if (!isLicenseValid()) {
+               JSONObject msgLicence = new JSONObject();
+               msgLicence.put("message", "Licence de la librairie invalide");
+               transmitToJs(msgLicence);
+           } else {
+               if ("Connection enabled".equals(connectionInfo)) {
+                   String mframes = pollFrame();
+                   if (mframes != null && mframes != "") {
+                       List<String> mesFrames = this.getFrames(mframes);
+                       JSONArray arrayJSON = new JSONArray();
+                       //Interprétation des frames reçues.
+                       for (String fr : mesFrames) {
+
+                           String frameInterpret = RadioInterpret.INSTANCE.interpret(fr);
+                           JSONObject msgFormat = formatResponse(frameInterpret.replace("VOLUME[1]", "VOLUME_1")
+                                   .replace("TIMEPOINT[1]", "TIMEPOINT_1"));
+                           arrayJSON.put(msgFormat);
+                       }
+
+                       JSONObject msgRetour = new JSONObject();
+                       msgRetour.put("telegrams", arrayJSON);
+                       transmitToJs(msgRetour);
+                   }
+
+               } else {
+                   JSONObject msg = new JSONObject();
+                   msg.put("message", connectionInfo);
+                   transmitToJs(msg);
+               }
+           }
+
+       } catch (JSONException jsonEx) {
+           Log.e(TAG, "pollFrames JSONException: " + jsonEx.toString());
+           callback.error("Erreur pollFrames: " + jsonEx.toString());
+       } catch (Exception exc) {
+           Log.e(TAG, "pollFrames: " + exc.toString());
+           callback.error("Erreur pollFrames: " + exc.toString());
+       }
+   }
     
     /**
+     * Cette fonction permet de fermer la connexion Bluetooth au PRT 
+     *
+     * @param callbackContext A Cordova callback context
+     * @return true si OK ou false si KO.
+     */
+    private void closeConnection(CallbackContext callback) {
+        try {
+           
+            if (IZARReceiver != null) {
+                IZARReceiver.stop();
+                IZARReceiver = null;
+                connectionInfo = null;
+                JSONObject msgClose = new JSONObject();
+                msgClose.put("message", "Connexion au PRT fermée");
+                transmitToJs(msgClose);
+            } else {
+                JSONObject msg = new JSONObject();
+                msg.put("message", "Aucune connexion active");
+                transmitToJs(msg);
+            }
+
+       } catch (JSONException jsonEx) {
+            Log.e(TAG, "closeConnection JSONException: "+ jsonEx.toString());
+            callback.error("Erreur closeConnection: " + jsonEx.toString()); 
+        } catch (Exception exc) {
+            Log.e(TAG, "closeConnection: " + exc.toString());
+            callback.error("Erreur closeConnection: " + exc.toString());
+        } 
+    }
+
+   /**
+     * Cette fonction permet d'extraire le frame à interpreter de la chaîne deviceUid +'\t'+frame+'\n'
+     * 
+     * @param chaineFrame     concaténation du deviceUid et du frame
+     * @return liste de frame à interpreter.
+     */
+   private List<String> getFrames(String chaineFrame) throws JSONException {
+        List<String> frame = new ArrayList<String>();
+     
+        if (chaineFrame != null && chaineFrame != "") {
+
+            List<String> myframes = new ArrayList<String>();
+
+            String[] lines = chaineFrame.split("\\s*\\r?\\n\\s*");
+            
+            for (String line : lines) {
+                myframes.add(line.replaceAll("\t", " "));
+            }
+            
+            for (int i = 0; i < myframes.size(); i++) {
+                String[] lignes = myframes.get(i).split(" ", 2);
+                frame.add(lignes[1]);
+            }
+        }
+        return frame;
+   }
+    //endregion "Lecture"
+
+    //region "Programmation"
+   /**
      * Cette fonction permet d'initialiser la connexion Bluetooth au OPTO en vue d'une configuration 
-     * @param param  args tableau des paramétre contenant 'macAddress', 'passworr' et leurs valeurs respectives
+     * @param param  args tableau des paramétres contenant 'macAddressOpto', 'passwordOpto' et leurs valeurs respectives
      * @param callbackContext A Cordova callback context
      * @return un objet message qui contient le status de la connexion.
      */
     private void openConfigurationConnection(JSONArray args, CallbackContext callback) {
         if (args != null) {
             try {
-
                 JSONObject params = args.getJSONObject(0);
-                String param1 = params.getString("macAddressOpto");
+                String macAddressOpto = params.getString("macAddressOpto");
                 String param2 = params.getString("passwordOpto");
 
-                if (param1 == null || param1 == "") {
+                if (macAddressOpto == null || macAddressOpto == "") {
                     JSONObject msgParam1 = new JSONObject();
                     msgParam1.put("message", "La valeur de l'adresse MAC du OPTO est null.");
                     transmitToJs(msgParam1);
                 }
 
                 if (param2 == null || param2 == "") {
-                    param2 = "PASSWORD\t0000";
+                    param2 = "PASSWORD\t51728913A4C4BA07";
                 }
 
                 if (!isLicenseValid()) {
@@ -251,13 +457,18 @@ public class EgeeSappel extends CordovaPlugin {
                     msgLicence.put("message", "Licence de la librairie invalide");
                     transmitToJs(msgLicence);
                 } else {
-                    String paramString = param1 + "\t" + param2;
-                    String connectionInfo = this.IZARMeterConfigStatic.create(paramString);
-                    JSONObject msg = new JSONObject();
-                    msg.put("message", connectionInfo);
-                    transmitToJs(msg);
+                    IZARMeterConfig = MeterConfig.create(macAddressOpto);
+                    if(IZARMeterConfig != null){
+                        JSONObject msg = new JSONObject();
+                        msg.put("message", "Success");
+                        transmitToJs(msg);
+                    } else {
+                        Log.e(TAG, "openConfigurationConnection MeterConfig.create erreur, connexion opto impossible");
+                        JSONObject msg = new JSONObject();
+                        msg.put("message", "Connexion échouée");
+                        transmitToJs(msg);
+                    }
                 }
-
             } catch (JSONException jsonEx) {
                 Log.e(TAG, "openConfigurationConnection JSONException: " + jsonEx.toString());
                 callback.error("Erreur openConfigurationConnection: " + jsonEx.toString());
@@ -280,9 +491,7 @@ public class EgeeSappel extends CordovaPlugin {
      * @return une chaine contenant le status, le nom du module et le N° de série
      */
     private void initializeConfiguration(JSONArray args, CallbackContext callback) {
-
         try {
-
             JSONObject params = args.getJSONObject(0);
             String paramString = params.getString("paramString");
 
@@ -291,21 +500,34 @@ public class EgeeSappel extends CordovaPlugin {
                 msgParam1.put("message", "La valeur du paramétre est null.");
                 transmitToJs(msgParam1);
             }
-
             if (!isLicenseValid()) {
                 JSONObject msgLicence = new JSONObject();
                 msgLicence.put("message", "Licence de la librairie invalide");
                 transmitToJs(msgLicence);
             } else {
+                if(IZARMeterConfig != null){
+                    /*final String settings = null; // put here the settings if required
+                    final String result = IZARMeterConfig.getOpticalReadout(settings);
+                    Log.d(TAG, "initializeConfiguration getOpticalReadout: " + result);*/
 
-                String resultInit = this.IZARMeterConfigStatic.initialize(paramString);
+                    String resultInit = IZARMeterConfig.initialize("PASSWORD\t51728913A4C4BA07");
+                    Log.d(TAG, "initializeConfiguration resultInit: " + resultInit);
 
-                if (resultInit != null && resultInit != "") {
-                    JSONObject resultInitFormat = formatResponse(resultInit);
-                    transmitToJs(resultInitFormat);
+                    String resultRead = IZARMeterConfig.readConfiguration();
+                    Log.d(TAG, "initializeConfiguration resultRead: " + resultRead);
+
+                    String errors = IZARMeterConfig.getErrors();
+                    Log.d(TAG, "initializeConfiguration errors: " + errors);
+
+                    IZARMeterConfig.disconnect();
+                    if (resultInit != null && resultInit != "") {
+                        JSONObject resultReadFormat = formatResponse(resultInit);
+                        transmitToJs(resultReadFormat);
+                    }
+                } else {
+                    Log.e(TAG, "initializeConfiguration IZARMeterConfig null");
                 }
             }
-
         } catch (JSONException jsonEx) {
             Log.e(TAG, "initializeConfiguration JSONException: " + jsonEx.toString());
             callback.error("Erreur initializeConfiguration: " + jsonEx.toString());
@@ -323,9 +545,8 @@ public class EgeeSappel extends CordovaPlugin {
      *         not.
      */
     private void readDeviceConfiguration(CallbackContext callback) {
-
         try {
-            String readResult = this.IZARMeterConfigStatic.readConfiguration();
+            String readResult = IZARMeterConfig.readConfiguration();
             JSONObject msg = new JSONObject();
             msg.put("configuration", readResult);
             transmitToJs(msg);
@@ -346,7 +567,7 @@ public class EgeeSappel extends CordovaPlugin {
      */
     private void closeConfigConnection(CallbackContext callback) {
         try {
-            String resultDisconnect = this.IZARMeterConfigStatic.disconnect();
+            String resultDisconnect = IZARMeterConfig.disconnect();
             JSONObject msgClose = new JSONObject();
             msgClose.put("message", resultDisconnect);
             transmitToJs(msgClose);
@@ -369,9 +590,7 @@ public class EgeeSappel extends CordovaPlugin {
      * @return une chaine contenant le résultat de la modification
      */
     private void setDeviceConfiguration(JSONArray args, CallbackContext callback) {
-
         try {
-
             JSONObject params = args.getJSONObject(0);
             String paramString = params.getString("paramString");
            
@@ -388,9 +607,9 @@ public class EgeeSappel extends CordovaPlugin {
                 transmitToJs(msgLicence);
             } else {
 
-                String resultSetConfig = this.IZARMeterConfigStatic.setConfiguration(paramString);
+                String resultSetConfig = IZARMeterConfig.setConfiguration(paramString);
 
-                String resultWrite = this.IZARMeterConfigStatic.writeConfiguration();
+                String resultWrite = IZARMeterConfig.writeConfiguration();
 
                 if (resultWrite == "") {
                     JSONObject msgWrite = new JSONObject();
@@ -412,15 +631,41 @@ public class EgeeSappel extends CordovaPlugin {
             callback.error("Erreur setDeviceConfiguration: " + ex.toString());
         }
     }
+    //endregion "Programmation"
 
+    /**
+     * Cette fonction permet de transformer la response en object
+     * 
+     * @param result     chaine de frame
+     * @return un JSONObject frame.
+     */
+    private JSONObject formatResponse(String result) throws JSONException {
+        JSONObject msg = new JSONObject();
+        if (result != null && result != "") {
 
+            ArrayList<String> myframes = new ArrayList<String>();
+
+            String[] lines = result.split("\\s*\\r?\\n\\s*");
+            for (String line : lines) {
+                myframes.add(line.replaceAll("\t", " "));
+            }
+            
+            for (String fr : myframes) {
+                String[] lignes = fr.split(" ", 2);
+                msg.put(lignes[0], lignes[1]);
+            }
+        }
+        return msg;
+   }
+   
+   //region "Static"
     /**
      * Cette fonction permet d'initialiser la connexion Bluetooth au PRT 
      * @param param  args tableau des paramétre contenant 'macAddress' et sa valeur
      * @param callbackContext A Cordova callback context
      * @return un objet message qui contient le status de la connexion.
      */
-    private void openConnectionStatic(JSONArray args, CallbackContext callback) {
+    /*private void openConnectionStatic(JSONArray args, CallbackContext callback) {
         if (args != null) {
             try {
                
@@ -462,14 +707,14 @@ public class EgeeSappel extends CordovaPlugin {
         } else {
             callback.error("La liste des paramétres est vide");
         }
-    }
+    }*/
     
     /**
      * Cette fonction permet de récuperer la liste des télégrammes  
      * @param callbackContext A Cordova callback context
      * @return un tableau d'object télégrammes ou un object message.
      */
-    private void pollFrameStatic(CallbackContext callback) {
+    /*private void pollFrameStatic(CallbackContext callback) {
 
         try {
         
@@ -513,7 +758,7 @@ public class EgeeSappel extends CordovaPlugin {
             callback.error("Erreur pollFrameStatic: " + exc.toString());
         }
        
-    }
+    }*/
 
      /**
      * Cette fonction permet de fermer la connexion Bluetooth au PRT 
@@ -521,7 +766,7 @@ public class EgeeSappel extends CordovaPlugin {
      * @param callbackContext A Cordova callback context
      * @return true si OK ou false si KO.
      */
-    private void closeConnectionStatic(CallbackContext callback) {
+    /*private void closeConnectionStatic(CallbackContext callback) {
         try {
             String connectionInfo = this.IZARReceiverStatic.getStatus();
             if ("Connection enabled".equals(connectionInfo)) {
@@ -542,267 +787,107 @@ public class EgeeSappel extends CordovaPlugin {
             Log.e(TAG, "closeConnectionStatic: " + exc.toString());
             callback.error("Erreur closeConnectionStatic: " + exc.toString());
         } 
-    }
-
-     /**
-     * Cette fonction permet de lire et interpreter les telegrammes
-     * 
-     * @param param           adresse mac PRT
+    }*/
+   
+    /**
+     * Cette fonction permet d'initialiser la connexion Bluetooth au OPTO en vue d'une configuration 
+     * @param param  args tableau des paramétre contenant 'macAddressOpto', 'passwordOpto' et leurs valeurs respectives
      * @param callbackContext A Cordova callback context
-     * @return true if frame interpretation success, fail will be called if not.
+     * @return un objet message qui contient le status de la connexion.
      */
-     private void openConnection(JSONArray args, CallbackContext callback) {
-         if (args != null) {
+    /*private void openConfigurationConnectionStatic(JSONArray args, CallbackContext callback) {
+        if (args != null) {
+            try {
 
-             try {
+                JSONObject params = args.getJSONObject(0);
+                String macAddressOpto = params.getString("macAddressOpto");
+                String param2 = params.getString("passwordOpto");
 
-                 JSONObject params = args.getJSONObject(0);
-                 String param1 = params.getString("macAddress");
+                if (macAddressOpto == null || macAddressOpto == "") {
+                    JSONObject msgParam1 = new JSONObject();
+                    msgParam1.put("message", "La valeur de l'adresse MAC du OPTO est null.");
+                    transmitToJs(msgParam1);
+                }
 
-                 if (param1 == null || param1 == "") {
-                     JSONObject msgParam = new JSONObject();
-                     msgParam.put("message", "L'adresse MAC du PRT ne peut pas être null.");
-                     transmitToJs(msgParam);
-                 }
+                if (param2 == null || param2 == "") {
+                    param2 = "PASSWORD\t0000";
+                }
 
-                 if (!isLicenseValid()) {
+                if (!isLicenseValid()) {
                     JSONObject msgLicence = new JSONObject();
                     msgLicence.put("message", "Licence de la librairie invalide");
                     transmitToJs(msgLicence);
                 } else {
-                    if (IZARReceiver == null) {
-                       
-                        IZARReceiver = Receiver.start(param1, IZARReceiverCallback);
-                        Log.d("RECEIVER","Receiver.start connectionInfo"+ connectionInfo);
-                        if (IZARReceiver != null) {
-                            Log.d("RECEIVER","IZARReceiver != null");
-                            String myConnectionInfo = getStatus();
-                            Log.d("RECEIVER","getStatus myConnectionInfo"+ myConnectionInfo);
-                            JSONObject msg = new JSONObject();
-                            msg.put("message", myConnectionInfo);
-                            transmitToJs(msg);
-                        } else {
-                            Log.d("RECEIVER","IZARReceiver == null");
-                        }
-                    } else {
-                        Log.d("RECEIVER","Recuperation connectionInfo"+ connectionInfo);
-                        String myConnectionInfo = getStatus();
-                        JSONObject msg = new JSONObject();
-                        msg.put("message", myConnectionInfo);
-                        transmitToJs(msg);
-                    }
-                 } 
-                
-             } catch (JSONException jsonEx) {
-                callback.error("Erreur read JSONException: " + jsonEx.toString());
-             } catch (Exception ex) {
-                 callback.error("Erreur read:"+ex.getMessage());
-             }
-         } else {
-             callback.error("La liste des paramétres est vide");
-         }
+                    String connectionInfo = this.IZARMeterConfigStatic.create(macAddressOpto);
+                    JSONObject msg = new JSONObject();
+                    msg.put("message", connectionInfo);
+                    transmitToJs(msg);
+                }
 
-     }
-    
-     private final  IReceiverCallback IZARReceiverCallback = new IReceiverCallback()
-     {
-        @Override
-         public final  void onFrame(String deviceUid, String frame) {
-            // try {
-                 Log.d("RECEIVER", "device: " + deviceUid + " frame: " + frame);
-                 
-                 synchronized (frames) {
-                    frames.append(deviceUid).append('\t').append(frame).append('\n');
-                    return;
-                  }
-
-                 // interpretation d'une frame reçu
-                //  if (deviceUid != "" && frame != "") {
-
-                //      String resultInterpret = RadioInterpret.INSTANCE.interpret(frame);
-
-                //      JSONObject msg = formatResponse(resultInterpret.replace("VOLUME[1]", "VOLUME_1").replace("TIMEPOINT[1]", "TIMEPOINT_1"));
-                //      transmitToJs(msg);
-                //  }
-                
-            //  } catch (JSONException exjson) {
-            //      Log.e("RECEIVER", "JSON Exception caught: "+exjson);
-            //  }
-            
-         }
-       
-         @Override public final void onKeepAlive() {
-            Log.d("RECEIVER","Connection alive, but no telegramsavailable");
-           connectionInfo = "Connection enabled"; 
-        } 
-        @Override public final void onError(Exception e) { Log.d("RECEIVER","An error occured") ; } 
-        @Override public final void onConnectionClosed() { Log.d("RECEIVER","Disconnection") ; }
-   };
-
-   private String pollFrame()
-   {
-       String str;
-       synchronized (frames) {
-           str = frames.toString();
-           frames.setLength(0);
-       }
-       return str;
-   }
-
-   private String getStatus()
-    {
-        Log.d("SAPPEL getStatus","connectionInfo " + connectionInfo);
-        if (IZARReceiver == null) {
-            if (connectionInfo == null) {
-                connectionInfo = "Connection needs to be started";
+            } catch (JSONException jsonEx) {
+                Log.e(TAG, "openConfigurationConnection JSONException: " + jsonEx.toString());
+                callback.error("Erreur openConfigurationConnection: " + jsonEx.toString());
+            } catch (Exception exc) {
+                Log.e(TAG, "openConfigurationConnection: " + exc.toString());
+                callback.error("Erreur openConfigurationConnection: " + exc.toString());
             }
-        }
-        /*else if (frames.length() == 0) {
-            connectionInfo = "The receiver is not enabled";
         } else {
-            connectionInfo = "Connection enabled";
-        }*/
-        
-        return connectionInfo;
-    }
+            callback.error("La liste des paramètres est vide");
+        }
+    }*/
     
-   /**
-     * Cette fonction permet de récuperer la liste des télégrammes  
-     * @param callbackContext A Cordova callback context
-     * @return un tableau d'object télégrammes ou un object message.
-     */
-   private void pollFrames(CallbackContext callback) {
 
-       try {
-
-           if (!isLicenseValid()) {
-               JSONObject msgLicence = new JSONObject();
-               msgLicence.put("message", "Licence de la librairie invalide");
-               transmitToJs(msgLicence);
-           } else {
-
-               String myConnectionInfo = getStatus();
-               if ("Connection enabled".equals(myConnectionInfo)) {
-                   String mframes = pollFrame();
-                   if (mframes != null && mframes != "") {
-                       List<String> mesFrames = this.getFrames(mframes);
-                       JSONArray arrayJSON = new JSONArray();
-                       //Interprétation des frames reçues.
-                       for (String fr : mesFrames) {
-
-                           String frameInterpret = RadioInterpret.INSTANCE.interpret(fr);
-                           JSONObject msgFormat = formatResponse(frameInterpret.replace("VOLUME[1]", "VOLUME_1")
-                                   .replace("TIMEPOINT[1]", "TIMEPOINT_1"));
-                           arrayJSON.put(msgFormat);
-                       }
-
-                       JSONObject msgRetour = new JSONObject();
-                       msgRetour.put("telegrams", arrayJSON);
-                       transmitToJs(msgRetour);
-                   }
-
-               } else {
-                   JSONObject msg = new JSONObject();
-                   msg.put("message", myConnectionInfo);
-                   transmitToJs(msg);
-               }
-           }
-
-       } catch (JSONException jsonEx) {
-           Log.e(TAG, "pollFrames JSONException: " + jsonEx.toString());
-           callback.error("Erreur pollFrames: " + jsonEx.toString());
-       } catch (Exception exc) {
-           Log.e(TAG, "pollFrames: " + exc.toString());
-           callback.error("Erreur pollFrames: " + exc.toString());
-       }
-
-   }
-    
     /**
-     * Cette fonction permet de fermer la connexion Bluetooth au PRT 
-     *
+     * Cette fonction retourne les informations de l'entête du module
+     * 
+     * @param paramString     paramètre et valeur séparer par le caractère de tabulation
+     * Liste paramétre possible (MASS_CONFIG, PASSWORD, TIMINGS, RESET_ALARMS, SYNC_TIME, AUTO_RELEASE, SERIAL_OPTOH_EAD)
+     * Exemple: PASSWORD\t0000\nRESET_ALARMS\tTRUE
      * @param callbackContext A Cordova callback context
-     * @return true si OK ou false si KO.
+     * @return une chaine contenant le status, le nom du module et le N° de série
      */
-    private void closeConnection(CallbackContext callback) {
+    /*private void initializeConfigurationStatic(JSONArray args, CallbackContext callback) {
+
         try {
-           
-            if (IZARReceiver != null) {
-                IZARReceiver.stop();
-                IZARReceiver = null;
-                connectionInfo = null;
-                JSONObject msgClose = new JSONObject();
-                msgClose.put("message", "Connexion au PRT fermée");
-                transmitToJs(msgClose);
-            } else {
-                JSONObject msg = new JSONObject();
-                msg.put("message", "Aucune connexion active");
-                transmitToJs(msg);
+
+            JSONObject params = args.getJSONObject(0);
+            String paramString = params.getString("paramString");
+
+            if (paramString == null || paramString == "") {
+                JSONObject msgParam1 = new JSONObject();
+                msgParam1.put("message", "La valeur du paramétre est null.");
+                transmitToJs(msgParam1);
             }
 
-       } catch (JSONException jsonEx) {
-            Log.e(TAG, "closeConnection JSONException: "+ jsonEx.toString());
-            callback.error("Erreur closeConnection: " + jsonEx.toString()); 
-        } catch (Exception exc) {
-            Log.e(TAG, "closeConnection: " + exc.toString());
-            callback.error("Erreur closeConnection: " + exc.toString());
-        } 
-    }
+            if (!isLicenseValid()) {
+                JSONObject msgLicence = new JSONObject();
+                msgLicence.put("message", "Licence de la librairie invalide");
+                transmitToJs(msgLicence);
+            } else {
 
-   /**
-     * Cette fonction permet d'extraire le frame à interpreter de la chaîne deviceUid +'\t'+frame+'\n'
-     * 
-     * @param chaineFrame     concaténation du deviceUid et du frame
-     * @return liste de frame à interpreter.
-     */
-   private List<String> getFrames(String chaineFrame) throws JSONException {
-        List<String> frame = new ArrayList<String>();
-     
-           if (chaineFrame != null && chaineFrame != "") {
+                String resultInit = this.IZARMeterConfigStatic.initialize("0000");
+                Log.d(TAG, "initializeConfiguration resultInit: " + resultInit);
 
-                List<String> myframes = new ArrayList<String>();
+                String resultRead = this.IZARMeterConfigStatic.readConfiguration();
+                Log.d(TAG, "initializeConfiguration resultRead: " + resultRead);
 
-                String[] lines = chaineFrame.split("\\s*\\r?\\n\\s*");
-               
-               for (String line : lines) {
-                   myframes.add(line.replaceAll("\t", " "));
-               }
-               
-               for (int i = 0; i < myframes.size(); i++) {
-                   String[] lignes = myframes.get(i).split(" ", 2);
-                   frame.add(lignes[1]);
-               }
+                String errors = this.IZARMeterConfigStatic.getErrors();
+                Log.d(TAG, "initializeConfiguration errors: " + errors);
 
-           }
-           return frame;
-   }
-    
-    /**
-     * Cette fonction permet de transformer la response en object
-     * 
-     * @param result     chaine de frame
-     * @return un JSONObject frame.
-     */
-   private final  JSONObject formatResponse(String result) throws JSONException {
-       JSONObject msg = new JSONObject();
-      
-           if (result != null && result != "") {
+                this.IZARMeterConfigStatic.disconnect();
+                if (resultRead != null && resultRead != "") {
+                    JSONObject resultReadFormat = formatResponse(resultRead);
+                    transmitToJs(resultReadFormat);
+                }
+            }
 
-               ArrayList<String> myframes = new ArrayList<String>();
-
-               String[] lines = result.split("\\s*\\r?\\n\\s*");
-               for (String line : lines) {
-                   myframes.add(line.replaceAll("\t", " "));
-               }
-              
-               for (String fr : myframes) {
-                   String[] lignes = fr.split(" ", 2);
-                   msg.put(lignes[0], lignes[1]);
-               }
-
-           }
-           return msg;
-  
-   }
-   
+        } catch (JSONException jsonEx) {
+            Log.e(TAG, "initializeConfiguration JSONException: " + jsonEx.toString());
+            callback.error("Erreur initializeConfiguration: " + jsonEx.toString());
+        } catch (Exception ex) {
+            Log.e(TAG, "initializeConfiguration: " + ex.toString());
+            callback.error("Erreur initializeConfiguration: " + ex.toString());
+        }
+    }*/
+    //endregion "Static"
 }

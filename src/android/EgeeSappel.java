@@ -309,7 +309,7 @@ public class EgeeSappel extends CordovaPlugin {
            connectionInfo = "Connection enabled"; 
         } 
         @Override public void onError(Exception e) { Log.d("RECEIVERCALLBACK","An error occured") ; connectionInfo="";} 
-        @Override public void onConnectionClosed() { Log.d("RECEIVERCALLBACK","Disconnection") ; connectionInfo="Connection closed";}
+        @Override public void onConnectionClosed() { Log.d("RECEIVERCALLBACK","Disconnection") ; connectionInfo="Connexion au PRT fermée";}
    };
 
    private String pollFrame()
@@ -341,8 +341,8 @@ public class EgeeSappel extends CordovaPlugin {
                        JSONArray arrayJSON = new JSONArray();
                        //Interprétation des frames reçues.
                        for (String fr : mesFrames) {
-
                            String frameInterpret = RadioInterpret.INSTANCE.interpret(fr);
+
                            JSONObject msgFormat = formatResponse(frameInterpret.replace("VOLUME[1]", "VOLUME_1")
                                    .replace("TIMEPOINT[1]", "TIMEPOINT_1"));
                            arrayJSON.put(msgFormat);
@@ -506,22 +506,22 @@ public class EgeeSappel extends CordovaPlugin {
                 transmitToJs(msgLicence);
             } else {
                 if(IZARMeterConfig != null){
-                    /*final String settings = null; // put here the settings if required
+                    final String settings = null; // put here the settings if required
                     final String result = IZARMeterConfig.getOpticalReadout(settings);
-                    Log.d(TAG, "initializeConfiguration getOpticalReadout: " + result);*/
+                    Log.d(TAG, "initializeConfiguration getOpticalReadout: " + result);
 
-                    String resultInit = IZARMeterConfig.initialize("PASSWORD\t51728913A4C4BA07");
+                    /*String resultInit = IZARMeterConfig.initialize("PASSWORD\t51728913A4C4BA07");
                     Log.d(TAG, "initializeConfiguration resultInit: " + resultInit);
 
                     String resultRead = IZARMeterConfig.readConfiguration();
                     Log.d(TAG, "initializeConfiguration resultRead: " + resultRead);
 
                     String errors = IZARMeterConfig.getErrors();
-                    Log.d(TAG, "initializeConfiguration errors: " + errors);
+                    Log.d(TAG, "initializeConfiguration errors: " + errors);*/
 
                     IZARMeterConfig.disconnect();
-                    if (resultInit != null && resultInit != "") {
-                        JSONObject resultReadFormat = formatResponse(resultInit);
+                    if (result != null && result != "") {
+                        JSONObject resultReadFormat = formatResponse(result);
                         transmitToJs(resultReadFormat);
                     }
                 } else {
@@ -652,7 +652,18 @@ public class EgeeSappel extends CordovaPlugin {
             
             for (String fr : myframes) {
                 String[] lignes = fr.split(" ", 2);
-                msg.put(lignes[0], lignes[1]);
+                if(lignes[0].equals("ERRORFLAGS")){
+                    //on traite à part ERRORFLAGS car la valeur existe parfois en double, exemple : 0010 et BLOCKED
+                    //on ignore la valeur numérique
+                    String valeur = lignes[1].trim();
+                    if (valeur.matches("[0-9]+") && valeur.length() > 2) {
+                        //on ne veut pas renvoyer la valeur numérique car elle ne peut pas être traitée
+                    } else {
+                        msg.put(lignes[0], valeur);
+                    }
+                } else {
+                    msg.put(lignes[0], lignes[1]);
+                }
             }
         }
         return msg;
